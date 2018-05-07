@@ -2,9 +2,12 @@
 import requests
 import hashlib
 import logging
+import json
+import time
 
-global user_id, token
-
+global user_id, token, num, elaspedtime, passnum
+num = 0
+passnum = 0
 
 def md5(password):
     '''
@@ -16,8 +19,29 @@ def md5(password):
     m.update(password.encode('utf-8'))
     return m.hexdigest()
 
-def test_func(method = 'post', url = '/user/register', data = None, files = None, timeout=3):
-    global user_id, token
+def logg(method, url, elapsedtime, result, casenum, response):
+    logging.info('--------------------------------')
+    if result:
+        result = 'Pass'
+    else:
+        result = 'Failed'
+    jsonstr = json.dumps(response, indent=1)
+    logging.info('用例'+str(casenum)+':'+'-----------'+str(result)+'-----------')
+    logging.info('请求方法 --- '+method)
+    logging.info('请求url --- '+url)
+    logging.info('响应时间 --- '+str(elapsedtime))
+    logging.info('返回结果 --- ')
+    logging.info(jsonstr)
+
+def endlog(passnum, casenum, allelapsedtime):
+    rate = 100*(passnum/casenum)
+    logging.info('-----------Tests run:'+str(casenum)+'  Passed:'+str(passnum)+'  Pass rate:%.2f%% -------------------------' % rate)
+    logging.info('-----------Average response time: %.4f ------------------------------------' % (allelapsedtime/2))
+    logging.info('-----------------------------------------------------------------------------')
+
+
+def test_func(method='post', url='/user/register', data=None, files=None, num=0, timeout=3):
+    global user_id, token, elaspedtime, passnum
     baseurl = dict['baseurl']
     if 'pass' in data.keys():
         data['pass'] = md5(data['pass'])
@@ -33,23 +57,42 @@ def test_func(method = 'post', url = '/user/register', data = None, files = None
         elif method == ('get' or 'GET'):
             result = requests.get(baseurl+url, data)
         resopnse = result.json()
-        #待修改
-        #print(resopnse)
-        assert resopnse['msg'] == 'Succeeded', logging.error('请求失败 %s' % resopnse)
-        # 将最近一次登录后的user_id和token保存到全局变量
-        if url == '/user/login':
-            user_id = resopnse['user']['user_id']
-            token = resopnse['user']['token']
-        logging.info('---------Pass---------')
+        #单个case花费的响应时间
+        elaspedtime = result.elapsed.total_seconds()
+        #所有case花费的响应时间
+        if resopnse['msg'] == 'Succeeded':
+            # 将最近一次登录后的user_id和token保存到全局变量
+            if url == '/user/login':
+                user_id = resopnse['user']['user_id']
+                token = resopnse['user']['token']
+            logg(method, url, elaspedtime, True, num, resopnse)
+            passnum += 1
+        else:
+            logg(method, url, elaspedtime, False, num, resopnse)
     except BaseException as e:
-        logging.error('something wrong %s' % e)
+        logging.error('something wrong: %s' % e)
+        elaspedtime = 0
+    return elaspedtime, passnum
 
 def run():
+    starttime = time.localtime(time.time())
+    prtstime = time.strftime("%Y-%m-%d %H:%M:%S", starttime)
+    allelaspedtime = 0
     for i in dict['testcases']:
+        global num
+        num += 1
         if 'files' in i.keys():
-            test_func(i['method'], i['url'], i['data'], i['files'])
+            oncetime = test_func(i['method'], i['url'], i['data'], i['files'], num=num)[0]
         else:
-            test_func(i['method'], i['url'], i['data'])
+            oncetime = test_func(i['method'], i['url'], i['data'], num=num)[0]
+        # 所有case花费的响应时间
+        allelaspedtime += oncetime
+
+    endtime = time.localtime(time.time())
+    prtetime = time.strftime("%Y-%m-%d %H:%M:%S", endtime)
+    logging.info('-----------Start from '+prtstime+' to '+prtetime+' ------------')
+    endlog(passnum, num, allelaspedtime)
+
 
 
 dict = {
