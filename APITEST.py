@@ -36,7 +36,7 @@ def logg(method, url, elapsedtime, result, casenum, response):
 def endlog(passnum, casenum, allelapsedtime):
     rate = 100*(passnum/casenum)
     logging.info('-----------Tests run:'+str(casenum)+'  Passed:'+str(passnum)+'  Pass rate:%.2f%% -------------------------' % rate)
-    logging.info('-----------Average response time: %.4f ------------------------------------' % (allelapsedtime/2))
+    logging.info('-----------Average response time: %.5f -----------------------------------' % (allelapsedtime/2))
     logging.info('-----------------------------------------------------------------------------')
 
 
@@ -115,9 +115,60 @@ dict = {
                 'pic': 'avatar.jpg'
             },
             'files': {'pic': open('avatar.jpg', 'rb')}
+        },
+        {
+            'method': 'post',
+            'url': '/user/forget',
+            'data': {
+                'email': 'test1@test.com'
+            }
+        },
+        {
+            'method': 'post',
+            'url': '/user/avatar/delete',
+            'data': {
+                'user_id': 'default',
+                'token': 'default'
+            }
+        },
+        {
+            'method': 'post',
+            'url': '/user/search',
+            'data': {
+                'user_id': 'default',
+                'token': 'default',
+                'user_name': 'test2'
+            }
+        },
+        {
+            'method': 'post',
+            'url': '/user/reqcustomerservice',
+            'data': {
+                'user_id': 'default',
+                'token': 'default'
+            }
+        },
+        {
+            'method': 'post',
+            'url': '/user/logout',
+            'data': {
+                'user_id': 'default',
+                'token': 'default'
+            }
+        },
+        {
+            'method': 'post',
+            'url': '/user/uuid/check',
+            'data': {
+                'user_id': 'default',
+                'token': 'default'
+            }
         }
     ]
 }
+
+
+
 # 配置日志信息
 logging.basicConfig(filename='apilog.log', format='%(asctime)s:%(levelname)s:%(message)s', level=logging.INFO)
 # 定义一个Handler打印INFO及以上级别的日志到sys.stderr
